@@ -1053,17 +1053,15 @@ normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
 # This line converts the PIL image to a pytorch tensor
 to_tensor = transforms.ToTensor()
 
-"""
-FUNCTION: get_feature_vector(image_name, layer, dimension)
-Description: Extracts a feature vector for each image
-Input Parameters:
-        image_name --> Image from which the feature vector will be extracted
-        layer      --> Layer from the model we want to extract the feature vector
-        dimension  --> Dimension of the feature vector
-Output parameters:
-        my_embedding --> The feature vector itself
-"""
+
 def get_feature_vector(img, layer, dimension):
+    """
+    This function returns the feature vector extracted from a Neural network (we pass as an argument the layer of interest)
+    :param img: Image loaded with PIL from which we will extract the feature vector
+    :param layer: Layer from which we will extract the coefficients
+    :param dimension: Dimension of the feature vector
+    :return: The feature vector itself
+    """
     # 2. Create a PyTorch Variable with the transformed image
     t_img = Variable(normalize(to_tensor(scaler(img))).unsqueeze(0))
     # 3. Create a vector of zeros that will hold our feature vector
@@ -1083,16 +1081,15 @@ def get_feature_vector(img, layer, dimension):
 
 
 if __name__ == '__main__':
-    with h5py.File(r"C:\Users\user\Ponç\MET\IR\Datasets\Imagenet_Ponc\ALEXNET_imagenetponc_feature_vectors_PROPERLY_SELECTED.hdf5",'w') as f:
+    with h5py.File(r"C:\Users\user\Ponç\MET\IR\Datasets\Imagenet_Ponc\ALEXNET_imagenetponc_feature_vectors_PROPERLY_SELECTED_3.hdf5",'w') as f:
         for subdir, dirs, files in os.walk(rootdir):
             # directory = Conegudes, Desconegudes
             for directory in dirs:
-                # Afegir grup a l'hdf5 del directory
                 first_group = f.create_group(directory)
                 for subdir2, dirs2, files2 in os.walk(os.path.join(rootdir, directory)):
                     # directory2 = n02434244, n02124973, ...
                     for directory2 in dirs2:
-                        # Afegir grup de directory2
+                        # Add group of directory2
                         second_group = first_group.create_group(directory2)
                         for subdir3, dirs3, files3 in os.walk(os.path.join(rootdir, directory, directory2)):
                             # directory3 = Test, Train
@@ -1102,17 +1099,14 @@ if __name__ == '__main__':
                                 print(full_directory_path)
                                 list_files4_images = os.listdir(os.path.join(rootdir, directory, directory2, directory3))
                                 number_of_images = len(list_files4_images)
-                                # Auxiliary variable that will hold the dataset
-                                # feature_vectors_of_that_class = np.zeros((number_of_images, dimension[1]), dtype=np.float32)
+
                                 feature_vectors_of_that_class = []
-                                # Primer processem les imatges i despres creem el dataset a l'hdf5
+                                # First we process the images and then we write them to the hdf file
                                 i = 0
                                 good_predictions = 0
                                 for image_to_extract_fv in list_files4_images:
-                                    #print("Extracting feature vector of: ")
+
                                     image_name = os.path.join(full_directory_path, image_to_extract_fv)
-                                    #print(image_name)
-                                    # 1. Load the image with Pillow library
                                     img = Image.open(image_name)
                                     if(len(np.shape(img))==3):
                                         t_img = Variable(normalize(to_tensor(scaler(img))).unsqueeze(0))
