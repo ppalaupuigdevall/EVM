@@ -129,6 +129,28 @@ def ppp_cosine_similarity(x1, x2):
     return res
 
 
+def pairwise_euclidean_distance(x, y):
+    """
+    Computes pairwise euclidean distance between two matrices.
+    :param x: (Nl x dimension_of_feature_vector) PYTORCH tensor containing the feature vectors of each instance of Cl
+    :param y: (Nnotl x dimension_of_feature_vector) PYTORCH tensor containing the feature vectors of each instance of not classes Cl
+    :return: (Nl x Nnotl) PYTORCH tensor
+    """
+    x_norm = (x ** 2).sum(1).view(-1, 1)
+    if y is not None:
+        y_t = torch.transpose(y, 0, 1)
+        y_norm = (y ** 2).sum(1).view(1, -1)
+    else:
+        y_t = torch.transpose(x, 0, 1)
+        y_norm = x_norm.view(1, -1)
+
+    dist = x_norm + y_norm - 2.0 * torch.mm(x, y_t)
+    # Ensure diagonal is zero if x=y
+    # if y is None:
+    #     dist = dist - torch.diag(dist.diag)
+    return torch.clamp(dist, 0.0, np.inf)
+
+
 def select_class(Cl, X):
     """
     Selects class Cl and not class Cl from the list X
