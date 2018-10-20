@@ -3,11 +3,10 @@ import h5py
 import torch
 import argparse
 import scipy
+import os
 
-# Labels
-known_classes = ('n02096294','n03733805','n02123394')
 #dimension of the feature vectors extracted in feature_extractor.py
-dimension = (1, 4096)
+dimension = (1, 128)
 
 
 def psi_i_dist(dist, lambda_i, k_i):
@@ -151,7 +150,7 @@ def pairwise_euclidean_distance(x, y):
     return torch.clamp(dist, 0.0, np.inf)
 
 
-def select_class(Cl, X):
+def select_class(Cl, X, y):
     """
     Selects class Cl and not class Cl from the list X
     :param Cl: Class identifier from list known_classes
@@ -160,8 +159,8 @@ def select_class(Cl, X):
                                 : Xnotl -->  (Nnotl x dimension_of_feature_vector) PYTORCH tensor containing the feature_vectors of each instance of not classes Cl
     """
     Xnotl = []
-    Xl = X[known_classes.index(Cl)]
-    Xnotl_ind = [i for i, c in enumerate(known_classes) if (Cl != c)]
+    Xl = X[y.index(Cl)]
+    Xnotl_ind = [i for i, c in enumerate(y) if (Cl != c)]
     Nnotl = 0
     for ind in Xnotl_ind:
         Nnotl += len(X[ind][:,0])
@@ -201,7 +200,7 @@ def fit(X, y, tailsize, Cl):
     :return: PSI_l --> (Nl x 2) matrix containing the scale (lambda) and shape (k) of the fitted margins for each instance
                     of the class l
     """
-    Xl, Xnotl = select_class(Cl, X)
+    Xl, Xnotl = select_class(Cl, X, y)
     # distance computation
     D = ppp_cosine_similarity(Xl, Xnotl)
     D = D.numpy()
@@ -235,7 +234,7 @@ def train_EVM(X, y, tailsize, coverage_threshold):
             print(Cl)
             PSI_l = fit(X, y, tailsize, Cl)
             print("La mitjana del parametre k és = " +str(np.mean(PSI_l[:,1])))
-            Xl, Xnotl = select_class(Cl, X)
+            Xl, Xnotl = select_class(Cl, X, y)
             # TO BE REVIEWED
             #################################
             # I = reduce(PSI_l, Xl, coverage_threshold)
@@ -268,7 +267,8 @@ def load_data_from_HDF5(f):
     return llista
 
 def load_data_from_folders(root_dir):
-    global llista
+    llis = []
+    known_classes = []
     for root, dirs, files in os.walk(root_dir):
         for dir in dirs:
             X = np.zeros((1,128))
@@ -278,8 +278,10 @@ def load_data_from_folders(root_dir):
                 X = np.vstack((X,a))
             # Remove the first row of X
             X = X[1:, :]
-            llista.append(X)
+            llis.append(X)
+            known_classes.append(dir)
         break
+    return llis, known_classes
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -289,10 +291,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
     rootdir = args.rootdir
     tailsize = args.tailsize
-    output_folder = args.outdir
+    output_file = args.outdir
     coverage_threshold = 0.5
-    y = known_classes
-    X = load_data_from_folders(rootdir)
+    
+    X, y = load_data_from_folders(rootdir)
+    print(y)
     train_EVM(X, y, tailsize, coverage_threshold)
     # with h5py.File(r"C:\Users\user\Ponç\MET\IR\Datasets\Imagenet_Ponc\ALEXNET_imagenetponc_feature_vectors_PROPERLY_SELECTED_2.hdf5", 'r') as f:
     #     X = load_data_from_HDF5(f)
