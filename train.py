@@ -147,7 +147,7 @@ def pairwise_euclidean_distance(x, y):
     # Ensure diagonal is zero if x=y
     # if y is None:
     #     dist = dist - torch.diag(dist.diag)
-    return torch.clamp(dist, 0.0, np.inf)
+    return torch.sqrt(torch.clamp(dist, 0.0, np.inf))
 
 
 def select_class(Cl, X, y):
@@ -244,9 +244,9 @@ def train_EVM(X, y, tailsize, coverage_threshold):
             # print("Original shape of the PSI matrix for the class " + str(Cl) + " = " + str(np.shape(PSI_l)))
             # print("Reduced shape of the PSI matrix for the class " + str(Cl) + " = " + str(np.shape(PSI_l_reduced)))
             #################################
-            fg = fi.create_group(Cl)
-            data_weibull = fg.create_dataset(Cl + "_weibull", np.shape(PSI_l), dtype ='f4', data = PSI_l)
-            reduced_extreme_vectors = fg.create_dataset(Cl + "_extreme_vectors", np.shape(Xl), dtype='f4', data = Xl)
+            #fg = fi.create_group(Cl)
+            data_weibull = fi.create_dataset(Cl + "_weibull", np.shape(PSI_l), dtype ='f4', data = PSI_l)
+            #reduced_extreme_vectors = fg.create_dataset(Cl + "_extreme_vectors", np.shape(Xl), dtype='f4', data = Xl)
 
 
 llista = []
