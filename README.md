@@ -1,2 +1,2 @@
 # EVM
-Implementation of Extreme Value Machine
+Implementation of EVM
