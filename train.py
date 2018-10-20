@@ -207,7 +207,8 @@ def train_EVM(X, y, tailsize, coverage_threshold):
     :param coverage_threshold:
     :return:
     """
-    with h5py.File(r"C:\Users\user\Ponç\MET\IR\Datasets\Imagenet_Ponc\ALEXNET_imagenetponc_trained_weibull_parameters.hdf5", 'w') as fi:
+    global output_file
+    with h5py.File(output_file, 'w') as fi:
         for Cl in y:
             print(Cl)
             PSI_l = fit(X, y, tailsize, Cl)
@@ -262,9 +263,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("rootdir", help = "Directory where the folders containing feature vectors are located", type=str)
     parser.add_argument("tailsize", help = "Number of margins to fit the weibull distribution", type = int)
+    parser.add_argument("outdir", help = "The output file where the hdf5 file with Weibull parameters for each class will be located, sth like = /mydir/weibulls.hdf5", type = str)
     args = parser.parse_args()
     rootdir = args.rootdir
     tailsize = args.tailsize
+    output_folder = args.outdir
     coverage_threshold = 0.5
     y = known_classes
     X = load_data_from_folders(rootdir)
