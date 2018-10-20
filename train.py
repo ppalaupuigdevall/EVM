@@ -202,7 +202,8 @@ def fit(X, y, tailsize, Cl):
     """
     Xl, Xnotl = select_class(Cl, X, y)
     # distance computation
-    D = ppp_cosine_similarity(Xl, Xnotl)
+    #D = ppp_cosine_similarity(Xl, Xnotl)
+    D = pairwise_euclidean_distance(Xl, Xnotl)
     D = D.numpy()
     Nl = len(Xl[:, 0])
     # PSI_l is formed by (lambda, k)
@@ -233,7 +234,7 @@ def train_EVM(X, y, tailsize, coverage_threshold):
         for Cl in y:
             print(Cl)
             PSI_l = fit(X, y, tailsize, Cl)
-            print("La mitjana del parametre k és = " +str(np.mean(PSI_l[:,1])))
+            print("La mitjana del parametre k es = " +str(np.mean(PSI_l[:,1])))
             Xl, Xnotl = select_class(Cl, X, y)
             # TO BE REVIEWED
             #################################
@@ -295,8 +296,9 @@ if __name__ == '__main__':
     coverage_threshold = 0.5
     
     X, y = load_data_from_folders(rootdir)
+    
     print(y)
     train_EVM(X, y, tailsize, coverage_threshold)
-    # with h5py.File(r"C:\Users\user\Ponç\MET\IR\Datasets\Imagenet_Ponc\ALEXNET_imagenetponc_feature_vectors_PROPERLY_SELECTED_2.hdf5", 'r') as f:
+    # with h5py.File(r"C:\Users\user\Pon\MET\IR\Datasets\Imagenet_Ponc\ALEXNET_imagenetponc_feature_vectors_PROPERLY_SELECTED_2.hdf5", 'r') as f:
     #     X = load_data_from_HDF5(f)
     #     train_EVM(X, y, tailsize, coverage_threshold)
