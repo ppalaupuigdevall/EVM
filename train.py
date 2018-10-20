@@ -1,7 +1,7 @@
 import numpy as np
 import h5py
 import torch
-
+import argparse
 import scipy
 
 # Labels
@@ -244,11 +244,31 @@ def load_data_from_HDF5(f):
     f.visititems(get_objects)
     return llista
 
+def load_data_from_folders(root_dir):
+    global llista
+    for root, dirs, files in os.walk(root_dir):
+        for dir in dirs:
+            X = np.zeros((1,128))
+            for fil in os.listdir(os.path.join(root_dir,dir)):
+                a = np.load(os.path.join(root_dir,dir,fil))
+                a = a.T
+                X = np.vstack((X,a))
+            # Remove the first row of X
+            X = X[1:, :]
+            llista.append(X)
+        break
 
 if __name__ == '__main__':
-    tailsize = 1000
-    coverage_threshold = 0.49
+    parser = argparse.ArgumentParser()
+    parser.add_argument("rootdir", help = "Directory where the folders containing feature vectors are located", type=str)
+    parser.add_argument("tailsize", help = "Number of margins to fit the weibull distribution", type = int)
+    args = parser.parse_args()
+    rootdir = args.rootdir
+    tailsize = args.tailsize
+    coverage_threshold = 0.5
     y = known_classes
-    with h5py.File(r"C:\Users\user\Ponç\MET\IR\Datasets\Imagenet_Ponc\ALEXNET_imagenetponc_feature_vectors_PROPERLY_SELECTED_2.hdf5", 'r') as f:
-        X = load_data_from_HDF5(f)
-        train_EVM(X, y, tailsize, coverage_threshold)
+    X = load_data_from_folders(rootdir)
+    train_EVM(X, y, tailsize, coverage_threshold)
+    # with h5py.File(r"C:\Users\user\Ponç\MET\IR\Datasets\Imagenet_Ponc\ALEXNET_imagenetponc_feature_vectors_PROPERLY_SELECTED_2.hdf5", 'r') as f:
+    #     X = load_data_from_HDF5(f)
+    #     train_EVM(X, y, tailsize, coverage_threshold)
