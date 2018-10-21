@@ -4,6 +4,7 @@ import torch
 import argparse
 import scipy
 import os
+import libmr
 
 #dimension of the feature vectors extracted in feature_extractor.py
 dimension = (1, 128)
@@ -175,7 +176,16 @@ def select_class(Cl, X, y):
     Xnotl_tensor = torch.from_numpy(Xnotl_mat).float()
     return Xl_tensor, Xnotl_tensor
 
-
+def select_class_list(Cl, X, y):
+    Xnotl = []
+    Xl = X[y.index(Cl)]
+    Xnotl_ind = [i for i, c in enumerate(y) if (Cl != c)]
+    Nnotl = 0
+    for ind in Xnotl_ind:
+        Nnotl += len(X[ind][:,0])
+        Xnotl.append(X[ind])
+    return Xl, Xnotl
+	
 """
 FUNCTION: fit(X, y, tailsize, Cl):
 Description: Returns the Weibull parameters of each instance of class Cl, that is, the parameters that model the 
@@ -202,20 +212,23 @@ def fit(X, y, tailsize, Cl):
     """
     Xl, Xnotl = select_class(Cl, X, y)
     # distance computation
-    #D = ppp_cosine_similarity(Xl, Xnotl)
-    D = pairwise_euclidean_distance(Xl, Xnotl)
-    D = D.numpy()
+    D = ppp_cosine_similarity(Xl, Xnotl)
+    #D = pairwise_euclidean_distance(Xl, Xnotl)
+    D = D.numpy() 
+    #print(D)
     Nl = len(Xl[:, 0])
     # PSI_l is formed by (lambda, k)
     PSI_l = np.zeros((Nl, 2))
-
+    #mr = libmr.MR()
     for i in range(0, Nl):
         # We want to know the distribution of the MARGINS (we have to divide by 2 because the margin is the point that is half-way the negative sample)
         # We have to sort the vector of distances because we are interested in the closest instances, that are the most important defining the margins
         # because they can create confusion. NOTE = 0.5 is because is a margin
         d_sorted = 0.5 * np.sort(D[i, :])[:tailsize]
         k_i, lambda_i = fit_(d_sorted, iters = 100, eps = 1e-6)
+        #mr.fit_high(d_sorted, tailsize)
         PSI_li = (lambda_i, k_i)
+        #PSI_li = mr.get_params()[:2]
         PSI_l[i, :] = PSI_li
     return PSI_l
 
@@ -245,7 +258,7 @@ def train_EVM(X, y, tailsize, coverage_threshold):
             # print("Reduced shape of the PSI matrix for the class " + str(Cl) + " = " + str(np.shape(PSI_l_reduced)))
             #################################
             #fg = fi.create_group(Cl)
-            data_weibull = fi.create_dataset(Cl + "_weibull", np.shape(PSI_l), dtype ='f4', data = PSI_l)
+            data_weibull = fi.create_dataset(Cl, np.shape(PSI_l), dtype ='f4', data = PSI_l)
             #reduced_extreme_vectors = fg.create_dataset(Cl + "_extreme_vectors", np.shape(Xl), dtype='f4', data = Xl)
 
 
