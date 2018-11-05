@@ -12,6 +12,7 @@ rootdir    Directory where the folders containing feature vectors are located
 tailsize   Number of margins to fit the weibull distribution
 outFile    The output file where the hdf5 file with Weibull parameters for each class will be located, must be a file with extension .hdf5
 distance   The pairwise distance computed: int: euclidean (0), cosine_sim (1)
+histoDir   directory where we will store the distance matrices
 """
 
 
@@ -197,13 +198,16 @@ def fit(X, y, tailsize, Cl, distance):
     :return: PSI_l --> (Nl x 2) matrix containing the scale (lambda) and shape (k) of the fitted margins for each instance
                     of the class l
     """
+    global histoDir
     Xl, Xnotl = select_class(Cl, X, y)
     # distance computation
     if(distance == 0):
         D = pairwise_euclidean_distance(Xl, Xnotl)
     elif(distance == 1):
         D = ppp_cosine_similarity(Xl, Xnotl)
-    D = D.numpy() 
+    D = D.numpy()
+    #in order to compare
+    np.save(os.path.join(histoDir,Cl), D)
     #print(D)
     Nl = len(Xl[:, 0])
     # PSI_l is formed by (lambda, k)
@@ -294,12 +298,14 @@ if __name__ == '__main__':
     parser.add_argument("tailsize", help = "Number of margins to fit the weibull distribution", type = int)
     parser.add_argument("outFile", help = "The output file where the hdf5 file with Weibull parameters for each class will be located, sth like = /mydir/weibulls.hdf5", type = str)
     parser.add_argument("distance", help = "The pairwise distance computed: int: euclidean (0), cosine_sim (1)", type = int )
+    parser.add_argument("outDir", help = "Directory where the histogram of the distances will be located", type = str)
     args = parser.parse_args()
     rootdir = args.rootdir
     tailsize = args.tailsize
     output_file = args.outFile
     distance = args.distance
     coverage_threshold = 0.5
+    histoDir = args.outDir
     # TO LOAD FEATURE VECTORS FROM FOLDERS IN .npy FORMAT
     X, y = load_data_from_folders(rootdir)
     print("The known classes are: ")
