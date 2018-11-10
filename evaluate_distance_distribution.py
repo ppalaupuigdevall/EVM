@@ -207,7 +207,7 @@ def fit(X, y, tailsize, Cl, distance):
         D = ppp_cosine_similarity(Xl, Xnotl)
     D = D.numpy()
     #in order to compare
-    np.save(os.path.join(histoDir,Cl), D)
+    #np.save(os.path.join(histoDir,Cl), D)
     #print(D)
     Nl = len(Xl[:, 0])
     # PSI_l is formed by (lambda, k)
@@ -298,7 +298,7 @@ if __name__ == '__main__':
     parser.add_argument("tailsize", help = "Number of margins to fit the weibull distribution", type = int)
     parser.add_argument("outFile", help = "The output file where the hdf5 file with Weibull parameters for each class will be located, sth like = /mydir/weibulls.hdf5", type = str)
     parser.add_argument("distance", help = "The pairwise distance computed: int: euclidean (0), cosine_sim (1)", type = int )
-    parser.add_argument("outDir", help = "Directory where the histogram of the distances will be located", type = str)
+    parser.add_argument("outDir", help = "Directory where the distance matrix will be located", type = str)
     args = parser.parse_args()
     rootdir = args.rootdir
     tailsize = args.tailsize
@@ -308,9 +308,11 @@ if __name__ == '__main__':
     histoDir = args.outDir
     # TO LOAD FEATURE VECTORS FROM FOLDERS IN .npy FORMAT
     X, y = load_data_from_folders(rootdir)
+    for person, label in zip(X, y):
+        np.save(os.path.join(histoDir, label), person)
     print("The known classes are: ")
     print(y)
-    train_EVM(X, y, tailsize, coverage_threshold, distance)
+    #train_EVM(X, y, tailsize, coverage_threshold, distance)
     # TO LOAD FEATURE VECTORS FROM HDF5 file
     # with h5py.File(rootdir, 'r') as f:
     #     X = load_data_from_HDF5(f)
