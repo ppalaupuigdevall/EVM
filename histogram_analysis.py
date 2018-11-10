@@ -23,12 +23,17 @@ for Xl in X:
              color = 'green', 
              kde_kws={'linewidth': 2},
              rug_kws={'color': 'green'})
+    
     # Compute distances for inter samples for Cl class
     Xl, Xnotl = select_class(y[i], X, y)
     D_inter = pairwise_euclidean_distance(Xl, Xnotl)
     D_inter = D_inter.numpy()
+    plt.title(y[i])
     sns.distplot(np.resize(D_inter, (np.shape(D_inter)[0]*np.shape(D_inter)[1], 1)), hist = False, kde = True, rug = True,
              color = 'red', 
              kde_kws={'linewidth': 2},
              rug_kws={'color': 'red'})
+    plt.legend(('Intra (same class)', 'Inter (different classes)'))
+    i += 1
     plt.show()
+    
