@@ -12,6 +12,12 @@ rootdir    Directory where the folders containing feature vectors are located
 tailsize   Number of margins to fit the weibull distribution
 outFile    The output file where the hdf5 file with Weibull parameters for each class will be located, must be a file with extension .hdf5
 distance   The pairwise distance computed: int: euclidean (0), cosine_sim (1)
+Example: 
+srun python train_EVM.py 
+/work/morros/Albayzin/RTVE2018DB/dev2/computed_data/enrollment/features/ 
+300 
+/work/ppalau/Extreme_Value_Machine/FILE_NAME.hdf5
+0
 """
 
 
@@ -238,7 +244,7 @@ def train_EVM(X, y, tailsize, coverage_threshold, distance=0):
         for Cl in y:
             print(Cl)
             PSI_l = fit(X, y, tailsize, Cl, distance)
-            print("La mitjana del parametre k es = " +str(np.mean(PSI_l[:,1])))
+            print("La mitjana del parametre k es = " + str(np.mean(PSI_l[:,1])))
             Xl, Xnotl = select_class(Cl, X, y)
             # TO BE REVIEWED
             #################################

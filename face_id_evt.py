@@ -6,19 +6,28 @@ import torch
 weibull_params =  []
 sorted_names = []
 def load_weibull_params(weibull_file):
+    global weibull_params, sorted_names 
     def append_weibull(obj):
         global weibull_params
         weibull_params.append(obj)    
     
     def get_objects(obj, name):
         global sorted_names
-        if("weibull" in name):
-            append_weibull(obj)
-            sorted_names.append(name)
+        #if("weibull" in name):
+        append_weibull(obj)
+        sorted_names.append(name.name[1:])
     with h5py.File(weibull_file, 'r') as f:
         f.visititems(get_objects)
     return weibull_params, sorted_names
-		
+
+def load_weibull_params_2(weibull_file):
+    global weibull_params, sorted_names
+    f = h5py.File(weibull_file, 'r')
+    sorted_names = list(f.keys())
+    for key in sorted_names:
+        weibull_params.append(f[key])
+    return weibull_params, sorted_names
+ 
 def ppp_cosine_similarity(x1, x2):
     """Computes pairwise cosine similarity between rows of both matrices 
     :param x1: (Nl x dimension_of_feature_vector) PYTORCH tensor containing the feature vectors of each instance of Cl
@@ -60,12 +69,14 @@ def psi_i_dist(dist, lambda_i, k_i):
     return np.exp(-(((np.abs(dist))/lambda_i)**k_i))
 
 def face_identification_evt(query_face, enrollment_faces, enrollment_labels, d_thresh, hdf5_file, distance=0):
- 	   
-    #hdf5_file = '/work/ppalau/Extreme_Value_Machine/def_weibull_euclidean_distance.hdf5'
+     	   
     id = 'Unknown'
     scores = np.zeros(34)
     # This line returns a list containing pointers in the disk where the weibull parameters are located, this is list is properly sorted according to the names of the known_faces
-    weibull_params_dataset_list, sorted_names = load_weibull_params(hdf5_file)
+    weibull_params_dataset_list, sorted_names = load_weibull_params_2(hdf5_file)
+    #print("EL TIPUS DINS DEL SORTED NAME ES: "+str(type(sorted_names[0])))
+    #print("La llista amb els weibull: ")
+    #print(type(weibull_params_dataset_list[0]))
     # Functions that compute distance require pytorch tensors
     query_face_t = torch.from_numpy(query_face)
     enrollment_faces_t = torch.from_numpy(np.asarray(enrollment_faces)) 
@@ -76,9 +87,12 @@ def face_identification_evt(query_face, enrollment_faces, enrollment_labels, d_t
     distances_numpy = distances.numpy()
     
     for i in range(0, len(sorted_names)):
-        weibull_numpy_mat = weibull_params_dataset_list[i][:]
+        weibull_numpy_mat = weibull_params_dataset_list[i]
+        weibull_numpy_mat = weibull_numpy_mat[:]
+        #print(weibull_numpy_mat)
+        #print("Tipus del weibull_numpy_mat = " + str(type(weibull_numpy_mat)))
         # Load the distances for class i
-        distances_belonging_to_that_class = distances_numpy[enrollment_labels.index(sorted_names[i])]
+        distances_belonging_to_that_class = distances_numpy[:, enrollment_labels.index(sorted_names[i])]       
         number_of_weibull_pairs = len(weibull_numpy_mat[:, 0])
         # PSI_for_each weibull is a matrix holding the evaluation of the distance for each pair of weibull params
         psi_for_each_weibull = np.zeros((number_of_weibull_pairs, len(distances_belonging_to_that_class)))
