@@ -12,12 +12,26 @@ rootdir    Directory where the folders containing feature vectors are located
 tailsize   Number of margins to fit the weibull distribution
 outFile    The output file where the hdf5 file with Weibull parameters for each class will be located, must be a file with extension .hdf5
 distance   The pairwise distance computed: int: euclidean (0), cosine_sim (1)
+<<<<<<< Updated upstream
 Example: 
 srun python train_EVM.py 
 /work/morros/Albayzin/RTVE2018DB/dev2/computed_data/enrollment/features/ 
 300 
 /work/ppalau/Extreme_Value_Machine/FILE_NAME.hdf5
 0
+=======
+
+train_EVM.py:
+srun python train_EVM.py /work/morros/Albayzin/RTVE2018DB/dev2/computed_data/enrollment/features 300 /work/ppalau/Extreme_Value_Machine/17_11_18_review_euclidean.hdf5 0
+
+
+face_id_evt:
+srun --mem 16G --gres=gpu:1 python 7_full_system_simple.py LN24H-20151125 /work/morros/Albayzin/RTVE2018DB/dev2/computed_data/dev2/tracking_filtered/LN24H-20151125.seg /work/morros/Albayzin/RTVE2018DB/dev2/computed_data/enrollment/features /work/morros/Albayzin/RTVE2018DB/dev2/computed_data/dev2/features/LN24H-20151125 /work/ppalau/Extreme_Value_Machine/LN24H-20151125-0.99.rttm --idMethod=evt --weibullFile=/work/ppalau/Extreme_Value_Machine/17_11_18_review_euclidean.hdf5 --distance=0
+
+evaluation:
+srun perl md.eval-v22.pl -r LN24H-20151125-FACEREF.rttm -s LN24H-20151125-euclidean_1e-50.rttm
+
+>>>>>>> Stashed changes
 """
 
 
@@ -238,6 +252,9 @@ def train_EVM(X, y, tailsize, coverage_threshold, distance=0):
     :param coverage_threshold: Probability above which two pairs are considered redundant, that is, one model PSI_i is not representative enough for that class
     :param distance: int: 0 = euclidean, 1 = cosine_similarity
     :return:
+    srun python train_EVM.py /work/morros/Albayzin/RTVE2018DB/dev2/computed_data/enrollment/features 300 /work/ppalau/Extreme_Value_Machine/17_11_18_review_euclidean.hdf5 0
+
+
     """
     global output_file
     with h5py.File(output_file, 'w') as fi:
