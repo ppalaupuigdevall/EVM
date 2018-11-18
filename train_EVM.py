@@ -4,6 +4,22 @@ import torch
 import argparse
 import scipy
 import os
+import libmr
+
+"""
+To run this script one must provide the following arguments:
+rootdir    Directory where the folders containing feature vectors are located
+tailsize   Number of margins to fit the weibull distribution
+outFile    The output file where the hdf5 file with Weibull parameters for each class will be located, must be a file with extension .hdf5
+distance   The pairwise distance computed: int: euclidean (0), cosine_sim (1)
+Example: 
+srun python train_EVM.py 
+/work/morros/Albayzin/RTVE2018DB/dev2/computed_data/enrollment/features/ 
+300 
+/work/ppalau/Extreme_Value_Machine/FILE_NAME.hdf5
+0
+"""
+
 
 #dimension of the feature vectors extracted in feature_extractor.py
 dimension = (1, 128)
@@ -147,7 +163,7 @@ def pairwise_euclidean_distance(x, y):
     # Ensure diagonal is zero if x=y
     # if y is None:
     #     dist = dist - torch.diag(dist.diag)
-    return torch.clamp(dist, 0.0, np.inf)
+    return torch.sqrt(torch.clamp(dist, 0.0, np.inf))
 
 
 def select_class(Cl, X, y):
@@ -176,20 +192,7 @@ def select_class(Cl, X, y):
     return Xl_tensor, Xnotl_tensor
 
 
-"""
-FUNCTION: fit(X, y, tailsize, Cl):
-Description: Returns the Weibull parameters of each instance of class Cl, that is, the parameters that model the 
-             distribution of the shortest 'tailsize' margins of that class with respect to all other classes
-Input Parameters:
-        X       --> List containing matrices of (Nl x dimension_of_feature_vector) of all training classes
-        y       --> Labels of the classes
-        tailsize--> Number of margins to be fitted by the Weibull distribution
-        Cl      --> Class identifier from list known_classes
-Output parameters:
-        PSI_l   --> (Nl x 2) matrix containing the scale (lambda) and shape (k) of the fitted margins for each instance 
-                    of the class l 
-"""
-def fit(X, y, tailsize, Cl):
+def fit(X, y, tailsize, Cl, distance):
     """
     Returns the Weibull parameters of each instance of class Cl, that is, the parameters that model the
     distribution of the shortest 'tailsize' margins of that class with respect to all other classes
@@ -202,39 +205,46 @@ def fit(X, y, tailsize, Cl):
     """
     Xl, Xnotl = select_class(Cl, X, y)
     # distance computation
-    #D = ppp_cosine_similarity(Xl, Xnotl)
-    D = pairwise_euclidean_distance(Xl, Xnotl)
-    D = D.numpy()
+    if(distance == 0):
+        D = pairwise_euclidean_distance(Xl, Xnotl)
+    elif(distance == 1):
+        D = ppp_cosine_similarity(Xl, Xnotl)
+    D = D.numpy() 
+    #print(D)
     Nl = len(Xl[:, 0])
     # PSI_l is formed by (lambda, k)
     PSI_l = np.zeros((Nl, 2))
-
+    #mr = libmr.MR()
     for i in range(0, Nl):
         # We want to know the distribution of the MARGINS (we have to divide by 2 because the margin is the point that is half-way the negative sample)
         # We have to sort the vector of distances because we are interested in the closest instances, that are the most important defining the margins
         # because they can create confusion. NOTE = 0.5 is because is a margin
         d_sorted = 0.5 * np.sort(D[i, :])[:tailsize]
         k_i, lambda_i = fit_(d_sorted, iters = 100, eps = 1e-6)
+        #mr.fit_high(d_sorted, tailsize)
         PSI_li = (lambda_i, k_i)
+        #PSI_li = mr.get_params()[:2]
         PSI_l[i, :] = PSI_li
     return PSI_l
 
 
-def train_EVM(X, y, tailsize, coverage_threshold):
+def train_EVM(X, y, tailsize, coverage_threshold, distance=0):
     """
-
-    :param X:
-    :param y:
-    :param tailsize:
-    :param coverage_threshold:
+    Trains the Extreme Value Machine. It founds the proper weibull parameters for the margins of each class. It saves the weibull parameters
+    in the outputFile argument.
+    :param X: List containing the feature vectors of each class as a matrix of (Nl x dim_feature_vector) each one.
+    :param y: Labels of the classes
+    :param tailsize: Number of margins to fit the weibull distribution
+    :param coverage_threshold: Probability above which two pairs are considered redundant, that is, one model PSI_i is not representative enough for that class
+    :param distance: int: 0 = euclidean, 1 = cosine_similarity
     :return:
     """
     global output_file
     with h5py.File(output_file, 'w') as fi:
         for Cl in y:
             print(Cl)
-            PSI_l = fit(X, y, tailsize, Cl)
-            print("La mitjana del parametre k es = " +str(np.mean(PSI_l[:,1])))
+            PSI_l = fit(X, y, tailsize, Cl, distance)
+            print("La mitjana del parametre k es = " + str(np.mean(PSI_l[:,1])))
             Xl, Xnotl = select_class(Cl, X, y)
             # TO BE REVIEWED
             #################################
@@ -244,9 +254,9 @@ def train_EVM(X, y, tailsize, coverage_threshold):
             # print("Original shape of the PSI matrix for the class " + str(Cl) + " = " + str(np.shape(PSI_l)))
             # print("Reduced shape of the PSI matrix for the class " + str(Cl) + " = " + str(np.shape(PSI_l_reduced)))
             #################################
-            fg = fi.create_group(Cl)
-            data_weibull = fg.create_dataset(Cl + "_weibull", np.shape(PSI_l), dtype ='f4', data = PSI_l)
-            reduced_extreme_vectors = fg.create_dataset(Cl + "_extreme_vectors", np.shape(Xl), dtype='f4', data = Xl)
+            #fg = fi.create_group(Cl)
+            data_weibull = fi.create_dataset(Cl, np.shape(PSI_l), dtype ='f4', data = PSI_l)
+            #reduced_extreme_vectors = fg.create_dataset(Cl + "_extreme_vectors", np.shape(Xl), dtype='f4', data = Xl)
 
 
 llista = []
@@ -288,17 +298,20 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("rootdir", help = "Directory where the folders containing feature vectors are located", type=str)
     parser.add_argument("tailsize", help = "Number of margins to fit the weibull distribution", type = int)
-    parser.add_argument("outdir", help = "The output file where the hdf5 file with Weibull parameters for each class will be located, sth like = /mydir/weibulls.hdf5", type = str)
+    parser.add_argument("outFile", help = "The output file where the hdf5 file with Weibull parameters for each class will be located, sth like = /mydir/weibulls.hdf5", type = str)
+    parser.add_argument("distance", help = "The pairwise distance computed: int: euclidean (0), cosine_sim (1)", type = int )
     args = parser.parse_args()
     rootdir = args.rootdir
     tailsize = args.tailsize
-    output_file = args.outdir
+    output_file = args.outFile
+    distance = args.distance
     coverage_threshold = 0.5
-    
+    # TO LOAD FEATURE VECTORS FROM FOLDERS IN .npy FORMAT
     X, y = load_data_from_folders(rootdir)
-    
+    print("The known classes are: ")
     print(y)
-    train_EVM(X, y, tailsize, coverage_threshold)
-    # with h5py.File(r"C:\Users\user\Pon\MET\IR\Datasets\Imagenet_Ponc\ALEXNET_imagenetponc_feature_vectors_PROPERLY_SELECTED_2.hdf5", 'r') as f:
+    train_EVM(X, y, tailsize, coverage_threshold, distance)
+    # TO LOAD FEATURE VECTORS FROM HDF5 file
+    # with h5py.File(rootdir, 'r') as f:
     #     X = load_data_from_HDF5(f)
-    #     train_EVM(X, y, tailsize, coverage_threshold)
+    #     train_EVM(X, y, tailsize, coverage_threshold, distance)
