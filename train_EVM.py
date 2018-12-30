@@ -109,7 +109,7 @@ def reduce(PSI_l, Xl, coverage_threshold):
     for i in range(Nl):
         Si = []
         for j in range(Nl):
-            if(psi_i_dist(D[i, j], PSI_l[i,0], PSI_l[i, 1]/10) >= coverage_threshold):
+            if(psi_i_dist(D[i, j], PSI_l[i,0], PSI_l[i, 1]) >= coverage_threshold):
                 # Sample i is redundant with respect to j
                 Si.append(j)
         S.append(Si)
