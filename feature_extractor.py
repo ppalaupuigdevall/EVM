@@ -14,7 +14,7 @@ __author__ = "Ponc Palau Puigdevall"
 # train_dir is the directory with all the folders of imagenet
 train_dir = '/work/jrh/imagenet/train'
 # feature_vectors_dir is the directory where the feature vectors for each class will be saved
-feature_vectors_dir = '/work/ppalau/Extreme_Value_Machine/feature_vectors_imagenet/alexnet/train/known_classes'
+feature_vectors_dir = '/work/ppalau/Extreme_Value_Machine/feature_vectors_imagenet/alexnet/cosine/train'
 
 unknown_classes_dir = '/work/ppalau/Extreme_Value_Machine/feature_vectors_imagenet/alexnet/train/unknown_classes/unknown_classes_2'
 # These classes are random sampled among all IMAGENET classes. This was done with the script: "get_known_and_unknown_classes.py"
@@ -30,6 +30,7 @@ unknown_classes_2 = \
 ['n07717410','n03146219','n04067472','n01985128','n03891251','n02701002','n02111277','n04204347','n07693725','n04346328','n02058221','n03124170',\
  'n02099849','n04009552','n02391049','n04204238','n07718472','n02672831','n07802026','n04392985','n02112018','n02093647','n04536866','n04366367',\
  'n01872401','n02777292','n03400231']
+
 unknown_classes_3 = \
 ['n03874293','n02125311','n03481172','n01693334','n04040759','n03187595','n02483708','n02782093','n02102973','n02486261','n02006656','n02497673',\
  'n04154565','n04277352','n04465501','n03786901','n02488291','n03492542','n12267677','n04296562','n03676483','n01641577','n01748264','n03527444',\
@@ -4095,28 +4096,31 @@ def get_feature_vector(img, layer, dimension):
     # 8. Return the feature vector AND THE NUMBER OF CHANNELS OF THE IMAGE IN CASE THERE IS ONE GRAY IMAGE IN THE DATASET(WE HAVE TO DISCARD IT)
     return my_embedding
 
-known = False
+# CHANGE FOR UNKNOWN FEATURE EXTRACTION
+known = True
 
 if __name__ == '__main__':
-	for class_ in unknown_classes_2:
-		images = os.listdir(os.path.join(train_dir, class_))
-		for image_name in images:
-			img = Image.open(os.path.join(train_dir, class_, image_name))
-			if(len(np.shape(img))==3):
-				t_img = Variable(normalize(to_tensor(scaler(img))).unsqueeze(0))
-				prediction = model(t_img)
-				valuess, indexx = torch.max(prediction, -1)
-				print("Predicted class: " + str(indexx.item()))
-				print("   Image name: ")
-				print("   " + str(class_.split("n")[1]))
-				print("   Synset:")
-				print("   " + imagenet_readable_synsets[indexx.item()]['id'].split("-")[0])
-				if(class_.split("n")[1] == imagenet_readable_synsets[indexx.item()]['id'].split("-")[0]):
-					# We extract the feature vectors of the correct classified classes
-					feature_vect = get_feature_vector(img, layer, dimension)
-					# We save the feature vector in the output directory
-					print("Save image to output dir")
-					if(known):
-						np.save(os.path.join(feature_vectors_dir, class_, image_name), feature_vect.numpy())
-					else:
-						np.save(os.path.join(unknown_classes_dir, image_name), feature_vect.numpy())
+    # CHANGE FOR UNKNOWN FEATURE EXTRACTOR
+    for class_ in known_classes:
+        images = os.listdir(os.path.join(train_dir, class_))
+        for image_name in images:
+            img = Image.open(os.path.join(train_dir, class_, image_name))
+            if(len(np.shape(img))==3):
+                t_img = Variable(normalize(to_tensor(scaler(img))).unsqueeze(0))
+                prediction = model(t_img)
+                valuess, indexx = torch.max(prediction, -1)
+                print("Predicted class: " + str(indexx.item()))
+                print("   Image name: ")
+                print("   " + str(class_.split("n")[1]))
+                print("   Synset:")
+                print("   " + imagenet_readable_synsets[indexx.item()]['id'].split("-")[0])
+                if(class_.split("n")[1] == imagenet_readable_synsets[indexx.item()]['id'].split("-")[0]):
+                    # We extract the feature vectors of the correct classified classes
+                    feature_vect = get_feature_vector(img, layer, dimension)
+                    # We save the feature vector in the output directory
+                    
+                    if(known):
+                        print("Saving image to " + str(os.path.join(feature_vectors_dir, class_, image_name)))
+                        np.save(os.path.join(feature_vectors_dir, class_, image_name), feature_vect.numpy())
+                    else:
+                        np.save(os.path.join(unknown_classes_dir, image_name), feature_vect.numpy())

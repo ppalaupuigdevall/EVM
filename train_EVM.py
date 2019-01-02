@@ -36,7 +36,7 @@ srun perl md.eval-v22.pl -r LN24H-20151125-FACEREF.rttm -s LN24H-20151125-euclid
 
 
 #dimension of the feature vectors extracted in feature_extractor.py
-dimension = (1, 128)
+dimension = (1, 4096)
 
 
 def psi_i_dist(dist, lambda_i, k_i):
@@ -228,16 +228,19 @@ def fit(X, y, tailsize, Cl, distance):
     Nl = len(Xl[:, 0])
     # PSI_l is formed by (lambda, k)
     PSI_l = np.zeros((Nl, 2))
-    #mr = libmr.MR()
+    mr = libmr.MR()
     for i in range(0, Nl):
         # We want to know the distribution of the MARGINS (we have to divide by 2 because the margin is the point that is half-way the negative sample)
         # We have to sort the vector of distances because we are interested in the closest instances, that are the most important defining the margins
         # because they can create confusion. NOTE = 0.5 is because is a margin
         d_sorted = 0.5 * np.sort(D[i, :])[:tailsize]
-        k_i, lambda_i = fit_(d_sorted, iters = 100, eps = 1e-6)
-        #mr.fit_high(d_sorted, tailsize)
-        PSI_li = (lambda_i, k_i)
-        #PSI_li = mr.get_params()[:2]
+        
+        if(distance == 0):
+            mr.fit_low(d_sorted, tailsize)
+            PSI_li = mr.get_params()[:2]
+        elif(distance == 1):
+            k_i, lambda_i = fit_(d_sorted, iters = 100, eps = 1e-6)
+            PSI_li = (lambda_i, k_i)    
         PSI_l[i, :] = PSI_li
     return PSI_l
 
@@ -298,11 +301,14 @@ def load_data_from_folders(root_dir):
     llis = []
     known_classes = []
     for root, dirs, files in os.walk(root_dir):
+        dirs = sorted(dirs)
         for dir in dirs:
-            X = np.zeros((1,128))
-            for fil in os.listdir(os.path.join(root_dir,dir)):
+            print(dir)
+            X = np.zeros((1, 4096))
+            for fil in sorted(os.listdir(os.path.join(root_dir,dir))):
+                #print(os.path.join(root_dir,dir,fil))
                 a = np.load(os.path.join(root_dir,dir,fil))
-                a = a.T
+                #a = a.T
                 X = np.vstack((X,a))
             # Remove the first row of X
             X = X[1:, :]

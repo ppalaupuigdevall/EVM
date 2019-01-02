@@ -23,6 +23,7 @@ def load_weibull_params(weibull_file):
 def load_weibull_params_2(weibull_file):
     global weibull_params, sorted_names
     f = h5py.File(weibull_file, 'r')
+    # f.keys sorts the keys we don't have to do sorted()
     sorted_names = list(f.keys())
     for key in sorted_names:
         weibull_params.append(f[key])
@@ -38,7 +39,6 @@ def ppp_cosine_similarity(x1, x2):
     x2_normalized = x2 / x2.norm(dim=1, p = 2)[:, None]
     res = torch.mm(x1_normalized, x2_normalized.t_())
     return res
-
 
 def pairwise_euclidean_distance(x, y):
     """Computes pairwise euclidean distance between two matrices.
@@ -69,11 +69,12 @@ def psi_i_dist(dist, lambda_i, k_i):
     return np.exp(-(((np.abs(dist))/lambda_i)**k_i))
 
 def face_identification_evt(query_face, enrollment_faces, enrollment_labels, d_thresh, hdf5_file, distance=0):
-     	   
+    # First the 	   
     id = 'Unknown'
-    scores = np.zeros(34)
+    scores = np.zeros(27)
     # This line returns a list containing pointers in the disk where the weibull parameters are located, this is list is properly sorted according to the names of the known_faces
     weibull_params_dataset_list, sorted_names = load_weibull_params_2(hdf5_file)
+    
     #print("EL TIPUS DINS DEL SORTED NAME ES: "+str(type(sorted_names[0])))
     #print("La llista amb els weibull: ")
     #print(type(weibull_params_dataset_list[0]))
@@ -81,16 +82,15 @@ def face_identification_evt(query_face, enrollment_faces, enrollment_labels, d_t
     query_face_t = torch.from_numpy(query_face)
     enrollment_faces_t = torch.from_numpy(np.asarray(enrollment_faces)) 
     if(distance==0):
-        distances = pairwise_euclidean_distance(query_face_t.view(-1,128), enrollment_faces_t.view(len(enrollment_faces), 128))
+        distances = pairwise_euclidean_distance(query_face_t.view(-1,4096), enrollment_faces_t.view(len(enrollment_faces), 4096))
     else:
-        distances = ppp_cosine_similarity(query_face_t.view(-1,128), enrollment_faces_t.view(len(enrollment_faces), 128))
+        distances = ppp_cosine_similarity(query_face_t.view(-1, 4096), enrollment_faces_t.view(len(enrollment_faces), 4096))
     distances_numpy = distances.numpy()
-    
+
     for i in range(0, len(sorted_names)):
         weibull_numpy_mat = weibull_params_dataset_list[i]
         weibull_numpy_mat = weibull_numpy_mat[:]
-        #print(weibull_numpy_mat)
-        #print("Tipus del weibull_numpy_mat = " + str(type(weibull_numpy_mat)))
+        
         # Load the distances for class i
         distances_belonging_to_that_class = distances_numpy[:, enrollment_labels.index(sorted_names[i])]       
         number_of_weibull_pairs = len(weibull_numpy_mat[:, 0])
@@ -100,6 +100,7 @@ def face_identification_evt(query_face, enrollment_faces, enrollment_labels, d_t
             if(distance==0):
                 psi_for_each_weibull[j] = psi_i_dist(distances_belonging_to_that_class, weibull_numpy_mat[j, 0], weibull_numpy_mat[j, 1])
             else:
+                #psi_for_each_weibull[j] = 1.0 - psi_i_dist(distances_belonging_to_that_class, weibull_numpy_mat[j, 0], weibull_numpy_mat[j, 1])
                 psi_for_each_weibull[j] = 1.0 - psi_i_dist(distances_belonging_to_that_class, weibull_numpy_mat[j, 0], weibull_numpy_mat[j, 1])
         scores[i] = np.min(psi_for_each_weibull)
 
@@ -108,5 +109,5 @@ def face_identification_evt(query_face, enrollment_faces, enrollment_labels, d_t
         strong_candidates = np.where(scores >= d_thresh)[0]
         if(strong_candidates.size != 0):
             id = sorted_names[np.argmax(scores)]
-    print(scores)
+
     return id, scores

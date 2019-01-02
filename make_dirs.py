@@ -1,6 +1,6 @@
 import os
 
-train_root_dir = '/work/ppalau/Extreme_Value_Machine/feature_vectors_imagenet/alexnet/train/known_classes'
+train_root_dir = '/work/ppalau/Extreme_Value_Machine/feature_vectors_imagenet/alexnet/cosine/train'
 test_root_dir = '/work/ppalau/Extreme_Value_Machine/feature_vectors_imagenet/alexnet/test/known_classes'
 
 known_classes = \
@@ -14,10 +14,10 @@ classes_to_remove = ['n02950826','n03075370','n04548280','n02804414','n07747607'
 #for elemm in classes_to_remove:
 #	os.rmdir(os.path.join(root_dir, elemm))
 
-#for elem in known_classes:
-#	os.mkdir(os.path.join(root_dir, elem))
-
 for elem in known_classes:
-	llista = os.listdir(os.path.join(train_root_dir, elem))
-	for i in range(0, int(0.4 * len(llista))):
-		os.rename(os.path.join(train_root_dir, elem, llista[i]), os.path.join(test_root_dir, elem, llista[i]))
+	os.mkdir(os.path.join(train_root_dir, elem))
+
+# for elem in known_classes:
+# 	llista = os.listdir(os.path.join(train_root_dir, elem))
+# 	for i in range(0, int(0.4 * len(llista))):
+# 		os.rename(os.path.join(train_root_dir, elem, llista[i]), os.path.join(test_root_dir, elem, llista[i]))
