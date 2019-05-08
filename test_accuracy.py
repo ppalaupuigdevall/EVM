@@ -20,10 +20,15 @@ def load_data_from_folders_with_labels(root_dir):
                 #labels.append(dirs.index(dir)) # amb aixo donava valueerror
                 labels.append(dir)
         break
+    # llis: lista con todas las features de una misma clase 
+    # known_classes: Una lista con todos los nombres de las known_classes BASADO EN COMO ESTA ORGANIZADO EL directorio donde estan tus features
+    # labels es lo mismo que known_classes
     return llis, known_classes, labels
 
+# Possible BUG: tess_dir tendría que acabar en test (como está en tu código)
 test_dir = '/work/ppalau/Extreme_Value_Machine/feature_vectors_imagenet/alexnet/euclidean/test/known_classes/'
 
+# el directorio que se le pasa a esta funcion tiene que estar organizado como he pintado en la libreta possible BUG
 llis, known_classes_, labels_ = load_data_from_folders_with_labels('/work/ppalau/Extreme_Value_Machine/feature_vectors_imagenet/alexnet/euclidean/train/known_classes/')
 
 #wei, sorted_classes = load_weibull_params_2('/work/ppalau/Extreme_Value_Machine/alexnet_imagenet_200_0_mr_fit_low.hdf5')
